@@ -1,6 +1,7 @@
 package emil.shortener.controller;
 
 import java.security.Principal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -59,5 +60,17 @@ public class UrlMappingController {
         LocalDateTime end = LocalDateTime.parse(endDate, formatter);
         List<ClickEventDto> clickEventDtos = urlMappingService.getClickEventsByDate(shortUrl, start, end);
         return ResponseEntity.ok(clickEventDtos);
+    }
+
+    @GetMapping("/totalClick")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Map<LocalDate, Long>> getTotalClicksByDate(Principal principal,
+            @RequestParam("startDate") String startDate, @RequestParam("endDate") String endDate) {
+        User user = userService.findByUsername(principal.getName());
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
+        LocalDate start = LocalDate.parse(startDate, formatter);
+        LocalDate end = LocalDate.parse(endDate, formatter);
+        Map<LocalDate, Long> totalClicks = urlMappingService.getTotalClicksByUserAndDate(user, start, end);
+        return ResponseEntity.ok(totalClicks);
     }
 }

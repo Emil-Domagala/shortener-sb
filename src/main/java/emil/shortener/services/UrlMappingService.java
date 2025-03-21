@@ -1,7 +1,9 @@
 package emil.shortener.services;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -9,11 +11,13 @@ import org.springframework.stereotype.Service;
 
 import emil.shortener.domains.dtos.ClickEventDto;
 import emil.shortener.domains.dtos.UrlMappingDto;
+import emil.shortener.domains.models.ClickEvent;
 import emil.shortener.domains.models.UrlMapping;
 import emil.shortener.domains.models.User;
 import emil.shortener.repository.ClickEventRepository;
 import emil.shortener.repository.UrlMappingRepository;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -69,7 +73,8 @@ public class UrlMappingService {
         if (urlMapping == null) {
             throw new EntityNotFoundException("Url not found");
         }
-        return clickEventRepository.findByUrlMappingAndClickDateBetween(shortUrl, start, end).stream()
+        return clickEventRepository.findByUrlMappingAndClickDateBetween(
+                urlMapping, start, end).stream()
                 .collect(Collectors.groupingBy(click -> click.getClickDate().toLocalDate(), Collectors.counting()))
                 .entrySet().stream().map(entry -> {
                     ClickEventDto dto = new ClickEventDto();
@@ -78,6 +83,31 @@ public class UrlMappingService {
                     return dto;
                 }).toList();
 
+    }
+
+    public Map<LocalDate, Long> getTotalClicksByUserAndDate(User user, LocalDate start, LocalDate end) {
+        List<UrlMapping> urlMappings = urlMappingRepository.findByUser(user);
+        List<ClickEvent> clickEvents = clickEventRepository.findByUrlMappingInAndClickDateBetween(urlMappings,
+                start.atStartOfDay(), end.plusDays(1).atStartOfDay());
+        return clickEvents.stream()
+                .collect(Collectors.groupingBy(click -> click.getClickDate().toLocalDate(), Collectors.counting()));
+
+    }
+
+    @Transactional
+    public UrlMapping getOriginalUrl(String shortUrl) {
+        UrlMapping urlMapping = urlMappingRepository.findByShortUrl(shortUrl);
+        if(urlMapping!=null){
+            urlMapping.setClickCount(urlMapping.getClickCount()+1);
+            urlMappingRepository.save(urlMapping);
+
+            ClickEvent clickEvent = new ClickEvent();
+            clickEvent.setUrlMapping(urlMapping);
+            clickEvent.setClickDate(LocalDateTime.now());
+            clickEventRepository.save(clickEvent);
+        }
+        
+        return urlMapping;
     }
 
 }
