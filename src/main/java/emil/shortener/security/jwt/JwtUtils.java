@@ -18,31 +18,41 @@ import jakarta.servlet.http.HttpServletRequest;
 
 @Component
 public class JwtUtils {
+
     @Value("${jwt.secret}")
     private String jwtSecret;
-    @Value("${jwt.expiration}")
-    private int jwtExpiration;
 
+    @Value("${jwt.expiration}")
+    private int jwtExpirationMs;
+
+    // Authorization -> Bearer <TOKEN>
     public String getJwtFromHeader(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
-        if (bearerToken != null) {
-            String[] parts = bearerToken.split(" ", 2);
-            return parts[1];
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
         }
         return null;
     }
 
     public String generateToken(UserDetailsImpl userDetails) {
         String username = userDetails.getUsername();
-        String roles = userDetails.getAuthorities().stream().map(authority -> authority.getAuthority())
-                .collect(Collectors.joining(" , "));
-        return Jwts.builder().subject(username).claim("roles", roles).issuedAt(new Date())
-                .expiration(new Date((new Date().getTime() + jwtExpiration))).signWith(key()).compact();
+        String roles = userDetails.getAuthorities().stream()
+                .map(authority -> authority.getAuthority())
+                .collect(Collectors.joining(","));
+        return Jwts.builder()
+                .subject(username)
+                .claim("roles", roles)
+                .issuedAt(new Date())
+                .expiration(new Date((new Date().getTime() + jwtExpirationMs)))
+                .signWith(key())
+                .compact();
     }
 
     public String getUserNameFromJwtToken(String token) {
-        return Jwts.parser().verifyWith((SecretKey) key()).build().parseSignedClaims(token).getPayload().getSubject();
-
+        return Jwts.parser()
+                .verifyWith((SecretKey) key())
+                .build().parseSignedClaims(token)
+                .getPayload().getSubject();
     }
 
     private Key key() {
@@ -51,7 +61,8 @@ public class JwtUtils {
 
     public boolean validateToken(String authToken) {
         try {
-            Jwts.parser().verifyWith((SecretKey) key()).build().parseSignedClaims(authToken);
+            Jwts.parser().verifyWith((SecretKey) key())
+                    .build().parseSignedClaims(authToken);
             return true;
         } catch (JwtException e) {
             throw new RuntimeException(e);
@@ -61,5 +72,4 @@ public class JwtUtils {
             throw new RuntimeException(e);
         }
     }
-
 }

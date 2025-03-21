@@ -1,4 +1,4 @@
-package emil.shortener.models;
+package emil.shortener.domains.models;
 
 import java.time.LocalDateTime;
 import java.util.List;

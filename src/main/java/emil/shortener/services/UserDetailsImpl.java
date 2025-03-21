@@ -7,20 +7,22 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import emil.shortener.models.User;
+import emil.shortener.domains.models.User;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 
 @Data
 @NoArgsConstructor
 public class UserDetailsImpl implements UserDetails {
-
     private static final long serialVersionUID = 1L;
 
     private Long id;
     private String username;
     private String email;
+
     private String password;
+
     private Collection<? extends GrantedAuthority> authorities;
 
     public UserDetailsImpl(Long id, String username, String email, String password,
@@ -56,5 +58,4 @@ public class UserDetailsImpl implements UserDetails {
     public String getUsername() {
         return username;
     }
-
 }

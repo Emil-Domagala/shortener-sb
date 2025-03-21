@@ -1,4 +1,4 @@
-package emil.shortener.dtos;
+package emil.shortener.domains.dtos;
 
 import java.util.Set;
 
